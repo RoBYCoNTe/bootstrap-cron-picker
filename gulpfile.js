@@ -7,6 +7,10 @@ var gulp = require('gulp'),
 
 gulp.task('default', [ 'minify-js', 'minify-css' ]);
 
+gulp.task('watch', function() {
+    gulp.watch("src/*.*", ['minify-js', 'minify-css'])
+})
+
 gulp.task('minify-js', function() {
     gulp.src(['src/standard-cron-formatter.js', 'src/quartz-cron-formatter.js', 'src/cron-picker.js'])
         .pipe(babel({

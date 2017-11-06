@@ -7,7 +7,14 @@
 CronPicker is a javascript library that provides easy to use 
 interface for generating CRON expressions.
 
-TODO: add preview gif
+## Fork improvements
+I've forked this great project to add few improvements necessary to me: 
+
+1. Added support for: every minutes, hours, days. 
+2. Changed UI for my requirements.
+3. Just for dev: new gulp task to watch and edit file at runtime. 
+
+You can use http-server and gulp watch to work on it and add your changes.
 
 ## Features
 

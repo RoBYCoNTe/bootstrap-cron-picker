@@ -55,11 +55,21 @@ QuartzCronFormatter.parse = function (cron) {
     } else {
         state.hours = parts[2];
         state.minutes = parts[1];
+        if (parts[2] === '*' && parts[3] === '1/1' && parts[4] == '*') {
 
-        if (parts[4] === '*' && parts[5] === '?' && parts[6] === '*') {
+            // minutes
+            state.type = 'Minutes';
+            state.minutes = parts[1].split('/')[1];
+        } else if (parts[0] === '0' && parts[1] === '0' && parts[3] === '1/1' && parts[4] === '*' && parts[5] === '?') {
+
+            // hourly
+            state.type = 'Hourly';
+            state.hours = parts[2].split('/')[1];
+        } else if (parts[4] === '*' && parts[5] === '?' && parts[6] === '*') {
 
             // daily
             state.type = 'Daily';
+            state.days = parts[3].split('/')[1];
         } else if (parts[4] == '*' && parts[5] !== '?') {
 
             // weekly
@@ -81,13 +91,18 @@ QuartzCronFormatter.parse = function (cron) {
             }
         }
     }
+    console.warn('state:', state);
     return state;
 };
 
 QuartzCronFormatter.build = function (state) {
     switch (state.type) {
+        case "Minutes":
+            return '0 0/' + state.minutes + ' * 1/1 * ? *';
+        case "Hourly":
+            return '0 0 0/' + state.hours + ' 1/1 * ? *';
         case "Daily":
-            return '0 ' + state.minutes + ' ' + state.hours + ' 1/1 * ? *';
+            return '0 ' + state.minutes + ' ' + state.hours + ' 1/' + state.days + ' * ? *';
         case "Weekly":
             var dow = state.daysOfWeek.sort().join(',');
             return '0 ' + state.minutes + ' ' + state.hours + ' ? * ' + dow + ' *';
@@ -151,7 +166,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             value: function _buildControl() {
                 var container = $('<div>', {
                     class: 'cron-picker-container',
-                    html: [this._buildRecurrenceTypes(), this._buildDaysOfWeeks(), this._buildMonthlyFilter(), this._buildTimePicker()]
+                    html: [this._buildRecurrenceTypes(), this._buildEveryMinutesPicker(), this._buildEveryHoursPicker(), this._buildEveryDaysPicker(), this._buildDaysOfWeeks(), this._buildMonthlyFilter(), this._buildTimePicker()]
                 });
 
                 this.wrapper.append(container);
@@ -186,7 +201,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
                 var dayFilterContainer = $('<div>', {
                     class: 'cron-picker-day-type-filter',
-                    html: [daySelect, 'day&nbsp;']
+                    html: [this._label('Every'), daySelect, ' day ']
                 });
 
                 var ordinalitySelect = $('<select>', {
@@ -211,8 +226,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 });
 
                 return $('<div>', {
-                    class: 'cron-picker-day-filter',
-                    html: [buttonContainer, dayFilterContainer, weekdayFilterContainer, 'of every', monthRepeaterSelect, 'month(s)']
+                    class: 'cron-picker-day-filter cron-picker-section',
+                    html: [buttonContainer, dayFilterContainer, weekdayFilterContainer, ' of every ', monthRepeaterSelect, ' month(s) ']
                 });
             }
         }, {
@@ -248,18 +263,51 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             key: '_buildTimePicker',
             value: function _buildTimePicker() {
                 return $('<div>', {
-                    class: 'cron-picker-time',
-                    html: ['Run at:', this._buildHourPicker(), '-', this._buildMinutesPicker(), this._buildAMPMPicker()]
+                    class: 'cron-picker-time cron-picker-section',
+                    html: [this._label('Start at:'), this._buildHourPicker(), ' - ', this._buildMinutesPicker(), this._buildAMPMPicker()]
+                });
+            }
+        }, {
+            key: '_label',
+            value: function _label(text) {
+                return $('<label>', {
+                    text: text
+                });
+            }
+        }, {
+            key: '_buildEveryMinutesPicker',
+            value: function _buildEveryMinutesPicker() {
+                return $('<div>', {
+                    class: 'cron-picker-every-minutes-picker cron-picker-section',
+                    html: [this._label('Every: '), this._buildMinutesPicker('cron-picker-every-minutes'), ' Minutes']
+                });
+            }
+        }, {
+            key: '_buildEveryHoursPicker',
+            value: function _buildEveryHoursPicker() {
+                return $('<div>', {
+                    class: 'cron-picker-every-hours-picker cron-picker-section',
+                    html: [this._label('Every: '), this._buildHourPicker('cron-picker-every-hours'), ' Hours']
+                });
+            }
+        }, {
+            key: '_buildEveryDaysPicker',
+            value: function _buildEveryDaysPicker() {
+                return $('<div>', {
+                    class: 'cron-picker-every-days-picker cron-picker-section   ',
+                    html: [this._label('Every: '), this._buildDaysPicker(), ' Days']
                 });
             }
         }, {
             key: '_buildHourPicker',
             value: function _buildHourPicker() {
+                var className = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'cron-picker-hours';
+
                 var self = this;
                 if (self.settings.format === '24') {
                     return $('<select>', {
                         html: CronPicker._buildOptions(24),
-                        class: 'form-control cron-picker-hours'
+                        class: 'form-control cron-picker-select ' + className
                     }).on('change', function () {
                         self._setHours();
                         self._buildCronExpression();
@@ -267,12 +315,24 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 } else {
                     return $('<select>', {
                         html: CronPicker._buildOptions(12, 1),
-                        class: 'form-control cron-picker-hours'
+                        class: 'form-control cron-picker-select ' + className
                     }).on('change', function () {
                         self._setHours();
                         self._buildCronExpression();
                     });
                 }
+            }
+        }, {
+            key: '_buildDaysPicker',
+            value: function _buildDaysPicker() {
+                var self = this;
+                return $('<select>', {
+                    html: CronPicker._buildOptions(31, 1),
+                    class: 'form-control cron-picker-select cron-picker-every-days'
+                }).on('change', function () {
+                    self.state.days = this.value;
+                    self._buildCronExpression();
+                });
             }
         }, {
             key: '_setHours',
@@ -302,13 +362,15 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
         }, {
             key: '_buildMinutesPicker',
             value: function _buildMinutesPicker() {
+                var className = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'cron-picker-minutes';
+
                 var self = this;
 
                 return $('<select>', {
                     html: CronPicker._buildOptions(60),
-                    class: 'form-control cron-picker-minutes'
+                    class: 'form-control cron-picker-select ' + className
                 }).on('change', function () {
-                    self.state.minutes = this.value;
+                    self.state.minutes = parseInt(this.value, 10);
                     self._buildCronExpression();
                 });
             }
@@ -317,7 +379,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
             value: function _buildRecurrenceTypes() {
                 return $('<ul>', {
                     class: 'nav nav-pills cron-picker-recurrence-types',
-                    html: [this._buildRecurrenceType('Daily'), this._buildRecurrenceType('Weekly'), this._buildRecurrenceType('Monthly')]
+                    html: [this._buildRecurrenceType('Minutes'), this._buildRecurrenceType('Hourly'), this._buildRecurrenceType('Daily'), this._buildRecurrenceType('Weekly'), this._buildRecurrenceType('Monthly')]
                 });
             }
         }, {
@@ -395,10 +457,13 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 });
 
                 this.wrapper.find('.cron-picker-minutes').val(this.state.minutes);
+                this.wrapper.find('.cron-picker-every-minutes').val(this.state.minutes);
 
                 var formatted = this._formatHours(this.state.hours);
                 this.wrapper.find('.cron-picker-hours').val(formatted[0]);
                 this.wrapper.find('.cron-picker-ampm').val(formatted[1]);
+                this.wrapper.find('.cron-picker-every-hours').val(formatted[0]);
+                this.wrapper.find('.cron-picker-every-days').val(this.state.days);
 
                 this.wrapper.find('.cron-picker-dow-select').val(this.state.dayOfWeek);
                 this.wrapper.find('.cron-picker-month-repeater').val(this.state.monthRepeater);
@@ -406,6 +471,28 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
                 this.wrapper.find('.cron-picker-day-number').val(this.state.dayNumber);
 
                 // Set controls visibility
+
+                if (this.state.type == 'Minutes') {
+                    this.wrapper.find('.cron-picker-every-minutes-picker').removeClass('hidden');
+                } else {
+                    this.wrapper.find('.cron-picker-every-minutes-picker').addClass('hidden');
+                }
+                if (this.state.type == 'Hourly') {
+                    this.wrapper.find('.cron-picker-every-hours-picker').removeClass('hidden');
+                } else {
+                    this.wrapper.find('.cron-picker-every-hours-picker').addClass('hidden');
+                }
+
+                if (this.state.type == 'Minutes' || this.state.type == 'Hourly') {
+                    this.wrapper.find('.cron-picker-time').addClass('hidden');
+                } else {
+                    this.wrapper.find('.cron-picker-time').removeClass('hidden');
+                }
+                if (this.state.type == 'Daily') {
+                    this.wrapper.find('.cron-picker-every-days-picker').removeClass('hidden');
+                } else {
+                    this.wrapper.find('.cron-picker-every-days-picker').addClass('hidden');
+                }
 
                 if (this.state.type == 'Weekly') {
                     this.wrapper.find('.cron-picker-dow').removeClass('hidden');

@@ -8,11 +8,23 @@ QuartzCronFormatter.parse = function (cron) {
     } else {
         state.hours = parts[2];
         state.minutes = parts[1];
+        if (parts[2] === '*' && parts[3] === '1/1' && parts[4] == '*') {
+            
+            // minutes
+            state.type = 'Minutes';
+            state.minutes = parts[1].split('/')[1];
 
-        if (parts[4] === '*' && parts[5] === '?' && parts[6] === '*') {
+        } else if (parts[0] === '0' && parts[1] === '0' && parts[3] === '1/1' && parts[4] === '*' && parts[5] === '?') {
+            
+            // hourly
+            state.type = 'Hourly';
+            state.hours = parts[2].split('/')[1];
 
+        } else if (parts[4] === '*' && parts[5] === '?' && parts[6] === '*') {
+            
             // daily
             state.type = 'Daily';
+            state.days = parts[3].split('/')[1];
 
         } else if (parts[4] == '*' && parts[5] !== '?') {
 
@@ -37,13 +49,18 @@ QuartzCronFormatter.parse = function (cron) {
 
         }
     }
+    console.warn('state:' , state);
     return state;
 };
 
 QuartzCronFormatter.build = function (state) {
     switch (state.type) {
+        case "Minutes":
+            return `0 0/${state.minutes} * 1/1 * ? *`
+        case "Hourly":
+            return `0 0 0/${state.hours} 1/1 * ? *`
         case "Daily":
-            return `0 ${state.minutes} ${state.hours} 1/1 * ? *`;
+            return `0 ${state.minutes} ${state.hours} 1/${state.days} * ? *`;
         case "Weekly":
             const dow = state.daysOfWeek.sort().join(',');
             return `0 ${state.minutes} ${state.hours} ? * ${dow} *`;

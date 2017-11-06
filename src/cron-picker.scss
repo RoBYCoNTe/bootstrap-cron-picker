@@ -1,3 +1,20 @@
+.cron-picker-container {
+  background-color: #f9f9f9;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+}
+.cron-picker-section {
+  border-top: 1px solid #d3d3d3;
+  padding-top: 8px;
+  padding-bottom: 6px
+}
+.cron-picker-section label {
+  font-weight: normal;
+  min-width: 70px;
+  text-align: right;
+  margin-right: 4px;
+}
 .cron-picker-dow {
   margin-bottom: 10px;
 
@@ -9,7 +26,13 @@
 .cron-picker-recurrence-types {
   margin-bottom: 10px;
 }
-
+.cron-picker-recurrence-types li:hover {
+  cursor: pointer;
+}
+.cron-picker-select {
+  width: 70px;
+  display: inline-block;
+}
 .cron-picker-day-filter {
   margin-bottom: 10px;
 
@@ -19,8 +42,8 @@
 
   select {
     display: inline-block;
-    width: 60px;
-    margin: 0 5px;
+    width: 70px;
+    margin: 0px;
   }
 
   .cron-picker-dow-select {
@@ -30,8 +53,8 @@
 
 .cron-picker-time {
   select {
-    width: 60px;
+    width: 70px;
     display: inline-block;
-    margin: 0 5px;
+    margin: 0
   }
 }
